@@ -1,26 +1,206 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* "The Frame" design tokens. Light theme only for v1; dark values live in tokens.json. */
+@theme {
+  --color-paper: #f4f2ee;
+  --color-surface: #ffffff;
+  --color-stucco: #ebe5d9;
+  --color-ink: #141414;
+  --color-ink-muted: #5c5852;
+  --color-line: #d9d4ca;
+  --color-terracotta: #a5512f;
+  --color-terracotta-soft: #ecd8ca;
+  --color-olive: #4b5631;
+  --color-deep: #1b1a18;
+  --color-on-deep: #f2efe9;
+  --color-on-deep-muted: #a8a297;
+  --color-on-accent: #ffffff;
+
+  --font-display: var(--font-oswald), "Arial Narrow", sans-serif;
+  --font-body: var(--font-jost), system-ui, sans-serif;
+
+  --text-display-xl: clamp(3.5rem, 8vw, 6rem);
+  --text-display-xl--line-height: 0.95;
+  --text-display-l: clamp(2.5rem, 5.5vw, 4rem);
+  --text-display-l--line-height: 1;
+  --text-heading: 2rem;
+  --text-heading--line-height: 2.375rem;
+  --text-body-l: 1.1875rem;
+  --text-body-l--line-height: 1.875rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.625rem;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.25rem;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1rem;
+
+  --radius-input: 2px;
+  /* The one shadow: floating panel / open mobile menu only. */
+  --shadow-float: 0 12px 32px -8px rgb(27 26 24 / 0.22);
+
+  --ease-frame: cubic-bezier(0.32, 0.72, 0, 1);
+  --default-transition-duration: 180ms;
+  --default-transition-timing-function: var(--ease-frame);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    scroll-padding-top: 88px;
+  }
+  body {
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+  ::selection {
+    background: var(--color-terracotta-soft);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-terracotta);
+    outline-offset: 3px;
+  }
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+  input,
+  textarea {
+    caret-color: var(--color-terracotta);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility wrap {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: 24px;
+  @media (width >= 48rem) {
+    padding-inline: 64px;
+  }
+}
+
+/* Oswald display voice: always uppercase, light, tight at size. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+@utility eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--text-eyebrow);
+  line-height: var(--text-eyebrow--line-height);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  &::before {
+    content: "";
+    width: 24px;
+    height: 1.5px;
+    background: var(--color-terracotta);
+  }
+}
+
+/* The Frame: 1.5px ink rule set out from the photo like a picture mat. */
+@utility frame {
+  border: 1.5px solid currentColor;
+  padding: 8px;
+}
+
+/* Missing-photo placeholder: line-colored hatching over stucco. */
+@utility hatch {
+  background-color: var(--color-stucco);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-line) 0 1px,
+    transparent 1px 12px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Scroll motion ----------
+   Native scroll-driven animations: no JS, off the main thread. Browsers without
+   animation-timeline, and visitors who prefer reduced motion, get the static page. */
+@property --pos {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* Headings and captions rise in as they enter. */
+    .sc-reveal {
+      animation: sc-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+    /* A photo fills its Frame from the bottom, like a blind going up. */
+    .sc-wipe {
+      animation: sc-wipe linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+    .sc-settle {
+      animation: sc-settle linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+    /* Background photos drift slower than the page. Parent must clip. */
+    .sc-parallax {
+      animation: sc-drift linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+    .sc-hero-drift {
+      animation: sc-hero-drift linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 100vh;
+    }
+    /* Scrolling performs the remodel: the before/after handle sweeps on its own
+       until the visitor touches it (data-touched), then it is theirs. */
+    .sc-sweep:not([data-touched]) {
+      animation: sc-sweep linear both;
+      animation-timeline: view();
+      animation-range: cover 25% cover 65%;
+    }
+  }
+}
+
+@keyframes sc-rise {
+  from { opacity: 0; transform: translateY(32px); }
+}
+@keyframes sc-wipe {
+  from { clip-path: inset(100% 0 0 0); }
+  to { clip-path: inset(0); }
+}
+@keyframes sc-settle {
+  from { transform: scale(1.15); }
+}
+@keyframes sc-drift {
+  from { transform: scale(1.15) translateY(-6%); }
+  to { transform: scale(1.15) translateY(6%); }
+}
+@keyframes sc-hero-drift {
+  from { transform: scale(1.1); }
+  to { transform: scale(1.1) translateY(5%); }
+}
+@keyframes sc-sweep {
+  from { --pos: 97%; }
+  to { --pos: 3%; }
 }
